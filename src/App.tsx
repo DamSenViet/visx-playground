@@ -1,4 +1,4 @@
-// import 'normalize.css'
+import 'normalize.css'
 import { Playground } from './Playground'
 
 function App() {  

@@ -2,14 +2,13 @@ import { ParentSize } from '@visx/responsive'
 import styled from 'styled-components'
 import Chart from './Chart'
 import { scaleOrdinal } from "d3-scale";
-import { symbolCircle, symbolDiamond, symbolCross, symbolStar, symbolTriangle, symbolWye } from "d3-shape";
+import { symbolCircle, symbolDiamond, symbolCross, symbolStar, symbolTriangle, symbolWye, symbolSquare, symbolX } from "d3-shape";
 import { PointsRange } from "@visx/mock-data/lib/generators/genRandomNormalPoints";
 import { Button, Slider } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePrevious } from 'react-use';
 import { randomInt, randomLcg } from "d3-random";
-import { debounce } from 'lodash-es';
-
+import { debounce, range, shuffle } from 'lodash-es';
+import { MotionConfig, MotionGlobalConfig } from 'framer-motion';
 
 const ChartArea = styled(ParentSize)`
   align-self: stretch;
@@ -46,18 +45,26 @@ const Playground = () => {
   const [points, setPoints] = useState(genRandomPoints(200, 0, 100));
   const filteredPoints = useMemo(() => points.slice(0, pointsCount), [points, pointsCount])
   
+  const [shapes, setShapes] = useState([symbolCircle, symbolDiamond, symbolCross, symbolStar, symbolTriangle, symbolSquare, symbolWye]);
+  const symbolScale = useMemo(() => scaleOrdinal(range(0, 10), shapes), [shapes]);
+  
   const debouncedSetPointsCount = useCallback(debounce(setPointsCount, 150), [setPointsCount]);
   
   useEffect(() => { debouncedSetPointsCount(pointSlide) }, [pointSlide, debouncedSetPointsCount])
   
+  const handleShuffleShapes = () => {
+    setShapes(shuffle(shapes.slice()));
+  };
   const handleRandomize = () => {
     setPoints(genRandomPoints(200, 0, 100, Math.random()));
   }
   
   return (
+    <MotionConfig>
       <Container>
         <ControlsArea>
-          <Button onClick={handleRandomize}>Randomize</Button>
+          <Button onClick={handleRandomize}>Randomize Points</Button>
+          <Button onClick={handleShuffleShapes}>Shuffle Shapes</Button>
           <div>
             Points #
             <Slider step={5} min={0} max={200} onChange={setPointsSlide} value={pointSlide} />
@@ -71,10 +78,11 @@ const Playground = () => {
             <Slider step={5} min={25} max={300} onChange={setYMargin} value={yMargin} />
           </div>
         </ControlsArea>
-        <ChartArea debounceTime={150}>
-          {({ width, height }) => <Chart width={width} height={height} margin={{ top: yMargin, bottom: yMargin, left: xMargin, right: xMargin }} points={filteredPoints}/>}
+        <ChartArea debounceTime={300}>
+          {({ width, height }) => <Chart width={width} height={height} margin={{ top: yMargin, bottom: yMargin, left: xMargin, right: xMargin }} points={filteredPoints} symbolScale={symbolScale} />}
         </ChartArea>
-      </Container>      
+      </Container>
+      </MotionConfig>
   )
 }
 
