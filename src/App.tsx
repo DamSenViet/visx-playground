@@ -1,9 +1,7 @@
-import 'normalize.css'
-import './App.css'
+// import 'normalize.css'
 import { Playground } from './Playground'
 
-function App() {
-
+function App() {  
   return (
     <>
       <Playground />

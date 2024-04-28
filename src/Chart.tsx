@@ -1,58 +1,27 @@
-/* eslint-disable no-empty */
+import { motion } from "framer-motion";
 import { Group } from "@visx/group";
-// import { Threshold } from "@visx/threshold";
 import { scaleLinear } from "@visx/scale";
 import { AxisLeft, AxisBottom, AxisRight } from "@visx/axis";
 import { GridRows, GridColumns } from "@visx/grid";
-import { Circle } from "@visx/shape";
-
-import { randomInt, randomLcg } from "d3-random";
-import genPoints, { PointsRange } from "@visx/mock-data/lib/generators/genRandomNormalPoints";
-import { motion } from "framer-motion";
+import { PointsRange } from "@visx/mock-data/lib/generators/genRandomNormalPoints";
 import { extent } from "d3-array";
 import { forceSimulation, forceCollide, forceLink, SimulationNodeDatum, SimulationLinkDatum, forceManyBody } from 'd3-force'
 import forceBoundary from "./forceBoundary";
-import { unzip } from "lodash-es";
+import { unzip, isNil } from "lodash-es";
 import { useMemo } from "react";
 
-const seed = 0.4487157388828242;
-const genRandomPoints = (count: number, min: number, max: number) => {
-  const generator = randomInt.source(randomLcg(seed))(min, max);
-  return Array(count)
-    .fill(undefined)
-    .map(() => [generator(), generator(), generator()] as PointsRange);
-};
-const points = genRandomPoints(100, 0, 100);
-
-export const background = "transparent";
-
 // accessors
-
 const xAccessor = (d: PointsRange) => d[0];
 const yAccessor = (d: PointsRange) => d[1];
 const zAccessor = (d: PointsRange) => d[2];
 
-// scales
-
-const origXScale = scaleLinear<number>({
-  domain: extent(points.map(xAccessor)) as [number, number],
-  nice: true,
-})
-const origYScale = scaleLinear<number>({
-  domain: extent(points.map(yAccessor)) as [number, number],
-  nice: true,
-})
-const origZScale = scaleLinear<number>({
-  domain: extent(points.map(zAccessor)) as [number, number],
-  nice: true,
-})
-
 const defaultMargin = { top: 40, right: 50, bottom: 50, left: 40 };
 
-export type ThresholdProps = {
+export type ChartProps = {
   width: number;
   height: number;
   margin?: { top: number; right: number; bottom: number; left: number };
+  points: PointsRange[]
 };
 
 
@@ -72,16 +41,29 @@ export default function Theshold({
   width,
   height,
   margin = defaultMargin,
-}: ThresholdProps) {
+  points,
+}: ChartProps) {
+  const origXScale = scaleLinear<number>({
+    domain: extent(points.map(xAccessor)) as [number, number],
+    nice: true,
+  })
+  const origYScale = scaleLinear<number>({
+    domain: extent(points.map(yAccessor)) as [number, number],
+    nice: true,
+  })
+  const origZScale = scaleLinear<number>({
+    domain: extent(points.map(zAccessor)) as [number, number],
+    nice: true,
+  })
   
   // bounds
   const xMax = width - margin.left - margin.right;
   const yMax = height - margin.top - margin.bottom;
   const zMax = height - margin.top - margin.bottom;
   
-  const xScale = useMemo(() => origXScale.copy().range([0, xMax]), [xMax]);
-  const yScale = useMemo(() => origYScale.copy().range([yMax, 0]), [yMax]);
-  const zScale = useMemo(() => origZScale.copy().range([zMax, 0]), [zMax]);
+  const xScale = useMemo(() => origXScale.copy().range([0, xMax]), [xMax, origXScale]);
+  const yScale = useMemo(() => origYScale.copy().range([yMax, 0]), [yMax, origYScale]);
+  const zScale = useMemo(() => origZScale.copy().range([zMax, 0]), [zMax, origZScale]);
 
   const [ pointNodes, annotationNodes, links ] = useMemo(() => unzip(points.map((point, i) => {
     const pointNode: PointNode = {
@@ -108,9 +90,9 @@ export default function Theshold({
       annotationNode,
       link
     ];
-  })) as [PointNode[], AnnotationNode[], SimulationLink[]], [xScale, yScale]);
+  })) as [PointNode[], AnnotationNode[], SimulationLink[]], [xScale, yScale, points]);
   
-  useMemo(() => {
+  const positionedAnnotationNode = useMemo(() => {
     const simulation = forceSimulation<MySimulationNode>([...pointNodes, ...annotationNodes]);
     simulation
       .force('connector', forceLink<MySimulationNode, SimulationLink>(links).distance(50))
@@ -126,7 +108,8 @@ export default function Theshold({
     // run simulation until end
     const ticksToStable = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
     simulation.tick(ticksToStable);
-  }, [pointNodes, annotationNodes, links])
+    return annotationNodes
+  }, [pointNodes, annotationNodes, links, xMax, yMax])
     
   // run the force simulation
   
@@ -134,19 +117,16 @@ export default function Theshold({
 
   if (width < 10) return null;
   return (
-    <div>
       <svg
         width={width}
         height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        // style={}
       >
         <rect
           x={0}
           y={0}
           width={width}
           height={height}
-          fill={background}
+          fill={"transparent"}
           rx={14}
         />
         <Group left={margin.left} top={margin.top}>
@@ -169,15 +149,46 @@ export default function Theshold({
           <text x={0} y={15} transform="rotate(-90)" fontSize={10}>
             Y
           </text>
-          {links.map((link, i) => <line key={i} stroke="black"
-            x1={(link.source as MySimulationNode).x ?? 0} y1={(link.source as MySimulationNode).y ?? 0}
-            x2={(link.target as MySimulationNode).x ?? 0} y2={(link.target as MySimulationNode).y ?? 0} />
-            )}
-          {points.map((point, i) => <motion.circle key={i} data-index={i} cx={xScale(xAccessor(point))} cy={yScale(yAccessor(point))} r={4} fill="rgba(54, 151, 255, 0.5)"/>)}
-          {annotationNodes.map(annotationNode => <motion.circle key={annotationNode.data} cx={annotationNode.x ?? 0} cy={annotationNode.y ?? 0} r={annotationNode.data.length * 4} fill="rgba(255, 54, 54, 0.5)">{annotationNode.data}</motion.circle>)}          
-          {annotationNodes.map(annotationNode => <motion.text key={annotationNode.data} x={annotationNode.x ?? 0} y={annotationNode.y ?? 0} textAnchor="middle" dominantBaseline="middle">{annotationNode.data}</motion.text>)}
+          {links.map((link, i) => <motion.line
+            key={i}
+            stroke="black"
+            animate={{
+              x1: (link.source as MySimulationNode).x ?? 0,
+              y1: (link.source as MySimulationNode).y ?? 0,
+              x2: (link.target as MySimulationNode).x ?? 0,
+              y2: (link.target as MySimulationNode).y ?? 0,
+            }}
+            />)}
+          {points.map((point, i) => <motion.circle
+            key={i}
+            data-index={i}
+            animate={{
+              cx: xScale(xAccessor(point)) ?? 0,
+              cy: yScale(yAccessor(point)) ?? 0,
+              r: 4, fill:"rgba(54, 151, 255, 0.5)" 
+            }}
+            />)}
+          {positionedAnnotationNode.map(annotationNode => <motion.circle
+            key={annotationNode.data}
+            animate={{
+              cx: !isNil(annotationNode.x) ? annotationNode.x : 0,
+              cy: !isNil(annotationNode.y) ? annotationNode.y : 0,
+              fill:"rgba(205, 36, 36, 0.5)",
+            }}
+            r={(annotationNode.data.length * 4) ?? 0}
+            />)}     
+          {positionedAnnotationNode.map(annotationNode => <motion.text
+              key={annotationNode.data}
+              animate={{
+                x: !isNil(annotationNode.x) ? annotationNode.x : 0,
+                y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+              }}
+              textAnchor="middle"
+              dominantBaseline={'middle'}
+              >
+                {annotationNode.data}
+            </motion.text>)}
         </Group>
       </svg>
-    </div>
   );
 }
