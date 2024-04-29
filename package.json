@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-spring/web": "^9.7.3",
     "@types/antd": "^1.0.0",
     "@types/d3-force": "^3.0.9",
     "@types/d3-interpolate": "^3.0.4",
