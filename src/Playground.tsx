@@ -10,14 +10,14 @@ import {
   symbolTriangle,
   symbolWye,
   symbolSquare,
-  symbolX,
 } from 'd3-shape'
 import { PointsRange } from '@visx/mock-data/lib/generators/genRandomNormalPoints'
 import { Button, Slider } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { randomInt, randomLcg } from 'd3-random'
+import { useDebounce } from '@uidotdev/usehooks'
 import { debounce, range, shuffle } from 'lodash-es'
-import { MotionConfig, MotionGlobalConfig } from 'framer-motion'
+import { MotionConfig } from 'framer-motion'
 
 const ChartArea = styled(ParentSize)`
   align-self: stretch;
@@ -39,8 +39,11 @@ const Container = styled.div`
 `
 
 const Playground = () => {
+  // real versions are debounced
   const [yMargin, setYMargin] = useState(40)
+  const debouncedYMargin = useDebounce(yMargin, 300)
   const [xMargin, setXMargin] = useState(40)
+  const debouncedXMargin = useDebounce(xMargin, 300)
 
   const genRandomPoints = (
     count: number,
@@ -134,10 +137,10 @@ const Playground = () => {
               width={width}
               height={height}
               margin={{
-                top: yMargin,
-                bottom: yMargin,
-                left: xMargin,
-                right: xMargin,
+                top: debouncedYMargin,
+                bottom: debouncedYMargin,
+                left: debouncedXMargin,
+                right: debouncedXMargin,
               }}
               points={filteredPoints}
               symbolScale={symbolScale}

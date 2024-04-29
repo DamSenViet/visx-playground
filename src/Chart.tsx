@@ -1,8 +1,12 @@
 import { animate, motion, useMotionValue } from 'framer-motion'
 import { Group } from '@visx/group'
 import { scaleLinear } from '@visx/scale'
-import { AxisLeft, AxisBottom, AxisRight } from '@visx/axis'
-import { GridRows, GridColumns } from '@visx/grid'
+import {
+  AnimatedAxis,
+  AnimatedGridRows,
+  AnimatedGridColumns,
+} from '@visx/react-spring'
+import { Orientation } from '@visx/axis'
 import { PointsRange } from '@visx/mock-data/lib/generators/genRandomNormalPoints'
 import { extent } from 'd3-array'
 import {
@@ -20,7 +24,7 @@ import { SymbolType, symbol, symbolCircle } from 'd3-shape'
 import { interpolate } from 'flubber'
 import { ScaleOrdinal } from 'd3-scale'
 
-const motionTransition = { type: 'spring', duration: 0.3 } as const
+const motionTransition = { type: 'spring', damping: 14 } as const
 
 // accessors
 const xAccessor = (d: PointsRange) => d[0]
@@ -199,33 +203,59 @@ export default function Chart({
         rx={14}
       />
       <Group left={margin.left} top={margin.top}>
-        <GridColumns
+        <AnimatedGridColumns
           scale={xScale}
-          width={xMax}
           height={yMax}
           stroke="#e0e0e0"
+          animationTrajectory="center"
         />
-        <GridRows scale={yScale} width={xMax} height={yMax} stroke="#e0e0e0" />
+        <AnimatedGridRows
+          scale={yScale}
+          width={xMax}
+          stroke="#e0e0e0"
+          animationTrajectory="center"
+        />
         <line x1={xMax} x2={xMax} y1={0} y2={yMax} stroke="#e0e0e0" />
-        <AxisBottom top={yMax} left={0} scale={xScale} numTicks={12} />
-        <AxisLeft top={0} left={0} scale={yScale} />
-        <AxisRight top={0} left={xMax} scale={zScale} />
+        <AnimatedAxis
+          orientation={Orientation.bottom}
+          top={yMax}
+          left={0}
+          scale={xScale}
+          numTicks={12}
+          animationTrajectory="center"
+        />
+        <AnimatedAxis
+          orientation={Orientation.left}
+          top={0}
+          left={0}
+          scale={yScale}
+          tickLabelProps={{ textAnchor: 'end', y: '0.25em', x: '-0.25em' }}
+          animationTrajectory="center"
+        />
+        <AnimatedAxis
+          orientation={Orientation.right}
+          top={0}
+          left={xMax}
+          scale={zScale}
+          tickLabelProps={{ textAnchor: 'start', y: '0.25em', x: '0.25em' }}
+          animationTrajectory="center"
+        />
         <text x={0} y={15} transform="rotate(-90)" fontSize={10}>
           Y
         </text>
-        {links.map((link, i) => (
-          <motion.line
-            key={i}
-            stroke="black"
-            animate={{
-              x1: (link.source as MySimulationNode).x ?? 0,
-              y1: (link.source as MySimulationNode).y ?? 0,
-              x2: (link.target as MySimulationNode).x ?? 0,
-              y2: (link.target as MySimulationNode).y ?? 0,
-            }}
-            transition={motionTransition}
-          />
-        ))}
+        {links.map((link, i) => {
+          return (
+            <motion.line
+              key={i}
+              stroke="black"
+              x1={`${(link.source as MySimulationNode).x}`}
+              y1={`${(link.source as MySimulationNode).y}`}
+              x2={`${(link.target as MySimulationNode).x}`}
+              y2={`${(link.target as MySimulationNode).y}`}
+              // transition={motionTransition}
+            />
+          )
+        })}
         {points.map((point, i) => {
           return (
             <motion.g

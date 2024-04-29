@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port=3000",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
@@ -17,11 +17,13 @@
     "@types/d3-scale": "^4.0.8",
     "@types/d3-shape": "^3.1.6",
     "@types/lodash-es": "^4.17.12",
+    "@uidotdev/usehooks": "^2.4.1",
     "@visx/axis": "^3.10.1",
     "@visx/event": "^3.3.0",
     "@visx/grid": "^3.5.0",
     "@visx/mock-data": "^3.3.0",
     "@visx/point": "^3.3.0",
+    "@visx/react-spring": "^3.10.1",
     "@visx/responsive": "^3.10.2",
     "@visx/shape": "^3.5.0",
     "@visx/threshold": "^3.5.0",
