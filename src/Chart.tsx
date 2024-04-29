@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { animate, motion, useMotionValue } from "framer-motion";
 import { Group } from "@visx/group";
 import { scaleLinear } from "@visx/scale";
 import { AxisLeft, AxisBottom, AxisRight } from "@visx/axis";
@@ -20,7 +20,7 @@ import { SymbolType, symbol, symbolCircle } from "d3-shape";
 import { interpolate } from "flubber";
 import { ScaleOrdinal } from "d3-scale";
 
-const motionTransition = { type: "ease", duration: 0.3 } as const;
+const motionTransition = { type: "spring", duration: 0.3 } as const;
 
 // accessors
 const xAccessor = (d: PointsRange) => d[0];
@@ -58,11 +58,11 @@ interface ShapeProps {
 
 const useMotionPathData = (d: string) => {
   const motionValue = useMotionValue<string>(d);
-  const interpolator = interpolate(motionValue.get(), d);
+  const interpolator = interpolate(motionValue.get(), d, { maxSegmentLength: 10 });
 
   useEffect(() => {
     animate(0, 1, {
-      ...motionTransition,
+      type: motionTransition.type,
       onUpdate: (progress) => motionValue.set(interpolator(progress)),
     });
   }, [interpolator, motionValue]);

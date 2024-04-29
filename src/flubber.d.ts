@@ -1,4 +1,3 @@
 declare module "flubber" {
-  import { interpolateString } from 'd3-interpolate'
-  export const interpolate: typeof interpolateString;
+  export const interpolate: (a: string, b: string, options?: { maxSegmentLength: number }) => (t: number) => string;
 }

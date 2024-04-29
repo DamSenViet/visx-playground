@@ -67,7 +67,7 @@ const Playground = () => {
           <Button onClick={handleShuffleShapes}>Shuffle Shapes</Button>
           <div>
             Points #
-            <Slider step={5} min={0} max={200} onChange={setPointsSlide} value={pointSlide} />
+            <Slider step={5} min={5} max={200} onChange={setPointsSlide} value={pointSlide} />
           </div>
           <div>
             X Margin
