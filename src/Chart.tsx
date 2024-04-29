@@ -223,6 +223,7 @@ export default function Chart({
               x2: (link.target as MySimulationNode).x ?? 0,
               y2: (link.target as MySimulationNode).y ?? 0,
             }}
+            transition={motionTransition}
           />
         ))}
         {points.map((point, i) => {
@@ -234,6 +235,7 @@ export default function Chart({
                 x: xScale(xAccessor(point)) ?? 0,
                 y: yScale(yAccessor(point)) ?? 0,
               }}
+              transition={motionTransition}
             >
               <Shape
                 shape={symbolScale(i)}
@@ -250,6 +252,7 @@ export default function Chart({
               x: !isNil(annotationNode.x) ? annotationNode.x : 0,
               y: !isNil(annotationNode.y) ? annotationNode.y : 0,
             }}
+            transition={motionTransition}
           >
             <Shape
               shape={symbolScale(i)}
@@ -266,6 +269,7 @@ export default function Chart({
             }}
             textAnchor="middle"
             dominantBaseline={'middle'}
+            transition={motionTransition}
           >
             {annotationNode.data}
           </motion.text>
