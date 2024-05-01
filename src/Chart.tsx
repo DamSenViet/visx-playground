@@ -1,4 +1,4 @@
-import { Point, animate, motion, useMotionValue } from 'framer-motion'
+import { animate, motion, useMotionValue } from 'framer-motion'
 import { Group } from '@visx/group'
 import { scaleLinear } from '@visx/scale'
 import {
@@ -19,11 +19,10 @@ import {
 } from 'd3-force'
 import forceBoundary from './forceBoundary'
 import { unzip, isNil } from 'lodash-es'
-import { useEffect, useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { SymbolType, symbol, symbolCircle } from 'd3-shape'
 import { interpolate } from 'flubber'
 import { ScaleOrdinal } from 'd3-scale'
-import { produce } from 'immer'
 
 const motionTransition = { type: 'spring', damping: 15 } as const
 
@@ -96,23 +95,44 @@ export default function Chart({
   points,
   symbolScale,
 }: ChartProps) {
-  const origXScale = scaleLinear<number>({
-    domain: extent(points.map(xAccessor)) as [number, number],
-    nice: true,
-  })
-  const origYScale = scaleLinear<number>({
-    domain: extent(points.map(yAccessor)) as [number, number],
-    nice: true,
-  })
-  const origZScale = scaleLinear<number>({
-    domain: extent(points.map(zAccessor)) as [number, number],
-    nice: true,
-  })
+  const origXScale = useMemo(
+    () =>
+      scaleLinear<number>({
+        domain: extent(points.map(xAccessor)) as [number, number],
+        nice: true,
+      }),
+    [points]
+  )
+  const origYScale = useMemo(
+    () =>
+      scaleLinear<number>({
+        domain: extent(points.map(yAccessor)) as [number, number],
+        nice: true,
+      }),
+    [points]
+  )
+  const origZScale = useMemo(
+    () =>
+      scaleLinear<number>({
+        domain: extent(points.map(zAccessor)) as [number, number],
+        nice: true,
+      }),
+    [points]
+  )
 
   // bounds
-  const xMax = width - margin.left - margin.right
-  const yMax = height - margin.top - margin.bottom
-  const zMax = height - margin.top - margin.bottom
+  const xMax = useMemo(
+    () => width - margin.left - margin.right,
+    [width, margin]
+  )
+  const yMax = useMemo(
+    () => height - margin.top - margin.bottom,
+    [height, margin]
+  )
+  const zMax = useMemo(
+    () => height - margin.top - margin.bottom,
+    [height, margin]
+  )
 
   const xScale = useMemo(
     () => origXScale.copy().range([0, xMax]),
@@ -157,44 +177,126 @@ export default function Chart({
   )
   const [pointNodes, annotationNodes, links] = allNodes
 
-  const positionedAllNodes = useMemo(() => {
-    const simulation = forceSimulation<MySimulationNode>([
-      ...pointNodes,
-      ...annotationNodes,
-    ])
-    simulation
-      .force(
-        'connector',
-        forceLink<MySimulationNode, SimulationLink>(links).distance(50)
-      )
-      .force(
-        'repulsion',
-        forceManyBody<MySimulationNode>().strength((d) =>
-          d.type === 'annotation' ? -30 : 0
+  const simulation = useMemo(
+    () =>
+      forceSimulation<MySimulationNode>([...pointNodes, ...annotationNodes])
+        .force(
+          'connector',
+          forceLink<MySimulationNode, SimulationLink>(links).distance(50)
         )
-      )
-      .force(
-        'prevent-overlap',
-        forceCollide<MySimulationNode>().radius((d) => {
-          if (d.type === 'annotation') return d.data.length * 4
-          return 4
-        })
-      )
-      .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
+        .force(
+          'repulsion',
+          forceManyBody<MySimulationNode>().strength((d) =>
+            d.type === 'annotation' ? -30 : 0
+          )
+        )
+        .force(
+          'prevent-overlap',
+          forceCollide<MySimulationNode>().radius((d) => {
+            if (d.type === 'annotation') return d.data.length * 4
+            return 4
+          })
+        )
+        .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
+        .stop(),
+    [pointNodes, annotationNodes, links, xMax, yMax]
+  )
+
+  const positionedAllNodes = useMemo(() => {
     // run simulation until end
     const ticksToStable = Math.ceil(
       Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())
     )
     // NOTE: try not to rely on many simulation ticks too costly...
-    simulation.tick(5)
+    simulation.tick(2)
     return [pointNodes, annotationNodes, links] as const
-  }, [xMax, yMax, links, annotationNodes, pointNodes])
+  }, [simulation, links, annotationNodes, pointNodes])
 
   const positionedAnnotationNodes = positionedAllNodes[1]
 
   // run the force simulation
 
   // annotation nodes are now positioned
+  const renderedPoints = useMemo(
+    () =>
+      points.map((point, i) => {
+        return (
+          <motion.g
+            key={i}
+            data-index={i}
+            animate={{
+              x: xScale(xAccessor(point)) ?? 0,
+              y: yScale(yAccessor(point)) ?? 0,
+            }}
+            transition={motionTransition}
+          >
+            <Shape
+              shape={symbolScale(i)}
+              size={10}
+              fill="rgba(54, 151, 255, 0.5)"
+            />
+          </motion.g>
+        )
+      }),
+    [points, symbolScale, xScale, yScale]
+  )
+
+  const renderedAnnotationNodes = useMemo(
+    () =>
+      positionedAnnotationNodes.map((annotationNode, i) => (
+        <motion.g
+          key={annotationNode.data}
+          animate={{
+            x: !isNil(annotationNode.x) ? annotationNode.x : 0,
+            y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+          }}
+          transition={motionTransition}
+        >
+          <Shape
+            shape={symbolScale(i)}
+            size={annotationNode.data.length || 0}
+          />
+        </motion.g>
+      )),
+    [symbolScale, positionedAnnotationNodes]
+  )
+
+  const renderedAnnotationText = useMemo(
+    () =>
+      positionedAnnotationNodes.map((annotationNode) => (
+        <motion.text
+          key={annotationNode.data}
+          animate={{
+            x: !isNil(annotationNode.x) ? annotationNode.x : 0,
+            y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+          }}
+          textAnchor="middle"
+          dominantBaseline={'middle'}
+          transition={motionTransition}
+        >
+          {annotationNode.data}
+        </motion.text>
+      )),
+    [positionedAnnotationNodes]
+  )
+
+  const renderedLinks = useMemo(
+    () =>
+      links.map((link, i) => {
+        return (
+          <motion.line
+            key={i}
+            stroke="black"
+            x1={`${(link.source as MySimulationNode).x}`}
+            y1={`${(link.source as MySimulationNode).y}`}
+            x2={`${(link.target as MySimulationNode).x}`}
+            y2={`${(link.target as MySimulationNode).y}`}
+            transition={motionTransition}
+          />
+        )
+      }),
+    [links]
+  )
 
   if (width < 10) return null
   return (
@@ -249,67 +351,10 @@ export default function Chart({
         <text x={0} y={15} transform="rotate(-90)" fontSize={10}>
           Y
         </text>
-        {links.map((link, i) => {
-          return (
-            <motion.line
-              key={i}
-              stroke="black"
-              x1={`${(link.source as MySimulationNode).x}`}
-              y1={`${(link.source as MySimulationNode).y}`}
-              x2={`${(link.target as MySimulationNode).x}`}
-              y2={`${(link.target as MySimulationNode).y}`}
-              // transition={motionTransition}
-            />
-          )
-        })}
-        {points.map((point, i) => {
-          return (
-            <motion.g
-              key={i}
-              data-index={i}
-              animate={{
-                x: xScale(xAccessor(point)) ?? 0,
-                y: yScale(yAccessor(point)) ?? 0,
-              }}
-              transition={motionTransition}
-            >
-              <Shape
-                shape={symbolScale(i)}
-                size={10}
-                fill="rgba(54, 151, 255, 0.5)"
-              />
-            </motion.g>
-          )
-        })}
-        {positionedAnnotationNodes.map((annotationNode, i) => (
-          <motion.g
-            key={annotationNode.data}
-            animate={{
-              x: !isNil(annotationNode.x) ? annotationNode.x : 0,
-              y: !isNil(annotationNode.y) ? annotationNode.y : 0,
-            }}
-            transition={motionTransition}
-          >
-            <Shape
-              shape={symbolScale(i)}
-              size={annotationNode.data.length * 4 || 0}
-            />
-          </motion.g>
-        ))}
-        {positionedAnnotationNodes.map((annotationNode) => (
-          <motion.text
-            key={annotationNode.data}
-            animate={{
-              x: !isNil(annotationNode.x) ? annotationNode.x : 0,
-              y: !isNil(annotationNode.y) ? annotationNode.y : 0,
-            }}
-            textAnchor="middle"
-            dominantBaseline={'middle'}
-            transition={motionTransition}
-          >
-            {annotationNode.data}
-          </motion.text>
-        ))}
+        {renderedLinks}
+        {renderedPoints}
+        {renderedAnnotationNodes}
+        {renderedAnnotationText}
       </Group>
     </svg>
   )

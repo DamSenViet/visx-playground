@@ -19,6 +19,9 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { range, shuffle } from 'lodash-es'
 import { MotionConfig } from 'framer-motion'
 
+// const EnhancedChart = memo(Chart)
+const MAX_POINTS_COUNT = 500
+
 const ChartArea = styled(ParentSize)`
   align-self: stretch;
   justify-self: stretch;
@@ -60,7 +63,9 @@ const BubblePlayground = () => {
 
   const [pointsCount, setPointsCount] = useState(10)
   const debouncedPointsCount = useDebounce(pointsCount, 300)
-  const [points, setPoints] = useState(genRandomPoints(100, 0, 100))
+  const [points, setPoints] = useState(
+    genRandomPoints(MAX_POINTS_COUNT, 0, 100)
+  )
   const filteredPoints = useMemo(
     () => points.slice(0, debouncedPointsCount),
     [points, debouncedPointsCount]
@@ -84,8 +89,18 @@ const BubblePlayground = () => {
     setShapes(shuffle(shapes.slice()))
   }
   const handleRandomize = () => {
-    setPoints(genRandomPoints(200, 0, 100, Math.random()))
+    setPoints(genRandomPoints(MAX_POINTS_COUNT, 0, 100, Math.random()))
   }
+
+  const debouncedChartMargins = useMemo(
+    () => ({
+      top: debouncedYMargin,
+      bottom: debouncedYMargin,
+      left: debouncedXMargin,
+      right: debouncedXMargin,
+    }),
+    [debouncedXMargin, debouncedYMargin]
+  )
 
   return (
     <MotionConfig>
@@ -99,7 +114,7 @@ const BubblePlayground = () => {
             <Slider
               step={5}
               min={5}
-              max={200}
+              max={MAX_POINTS_COUNT}
               onChange={setPointsCount}
               value={pointsCount}
             />
@@ -130,12 +145,7 @@ const BubblePlayground = () => {
             <Chart
               width={width}
               height={height}
-              margin={{
-                top: debouncedYMargin,
-                bottom: debouncedYMargin,
-                left: debouncedXMargin,
-                right: debouncedXMargin,
-              }}
+              margin={debouncedChartMargins}
               points={filteredPoints}
               symbolScale={symbolScale}
             />
