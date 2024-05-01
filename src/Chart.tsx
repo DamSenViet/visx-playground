@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue } from 'framer-motion'
+import { animate, motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { Group } from '@visx/group'
 import { scaleLinear } from '@visx/scale'
 import {
@@ -222,11 +222,14 @@ export default function Chart({
       points.map((point, i) => {
         return (
           <motion.g
-            key={i}
+            key={`bubble-${i}`}
             data-index={i}
+            // initial={{ opacity: 0 }}
+            // exit={{ opacity: 0 }}
             animate={{
               x: xScale(xAccessor(point)) ?? 0,
               y: yScale(yAccessor(point)) ?? 0,
+              opacity: 1,
             }}
             transition={motionTransition}
           >
@@ -245,10 +248,13 @@ export default function Chart({
     () =>
       positionedAnnotationNodes.map((annotationNode, i) => (
         <motion.g
-          key={annotationNode.data}
+          key={`annotation-bubble-${annotationNode.data}`}
+          // initial={{ opacity: 0 }}
+          // exit={{ opacity: 0 }}
           animate={{
             x: !isNil(annotationNode.x) ? annotationNode.x : 0,
             y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+            opacity: 1,
           }}
           transition={motionTransition}
         >
@@ -265,10 +271,13 @@ export default function Chart({
     () =>
       positionedAnnotationNodes.map((annotationNode) => (
         <motion.text
-          key={annotationNode.data}
+          key={`annotation-text-${annotationNode.data}`}
+          // initial={{ opacity: 0 }}
+          // exit={{ opacity: 0 }}
           animate={{
             x: !isNil(annotationNode.x) ? annotationNode.x : 0,
             y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+            opacity: 1,
           }}
           textAnchor="middle"
           dominantBaseline={'middle'}
@@ -286,6 +295,8 @@ export default function Chart({
         return (
           <motion.line
             key={i}
+            // initial={{ opacity: 0 }}
+            // exit={{ opacity: 0 }}
             stroke="black"
             x1={`${(link.source as MySimulationNode).x}`}
             y1={`${(link.source as MySimulationNode).y}`}
@@ -351,10 +362,12 @@ export default function Chart({
         <text x={0} y={15} transform="rotate(-90)" fontSize={10}>
           Y
         </text>
+        {/* <AnimatePresence> */}
         {renderedLinks}
         {renderedPoints}
         {renderedAnnotationNodes}
         {renderedAnnotationText}
+        {/* </AnimatePresence> */}
       </Group>
     </svg>
   )
