@@ -224,8 +224,8 @@ export default function Chart({
           <motion.g
             key={`bubble-${i}`}
             data-index={i}
-            // initial={{ opacity: 0 }}
-            // exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
             animate={{
               x: xScale(xAccessor(point)) ?? 0,
               y: yScale(yAccessor(point)) ?? 0,
@@ -249,8 +249,8 @@ export default function Chart({
       positionedAnnotationNodes.map((annotationNode, i) => (
         <motion.g
           key={`annotation-bubble-${annotationNode.data}`}
-          // initial={{ opacity: 0 }}
-          // exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          exit={{ opacity: 0 }}
           animate={{
             x: !isNil(annotationNode.x) ? annotationNode.x : 0,
             y: !isNil(annotationNode.y) ? annotationNode.y : 0,
@@ -272,8 +272,8 @@ export default function Chart({
       positionedAnnotationNodes.map((annotationNode) => (
         <motion.text
           key={`annotation-text-${annotationNode.data}`}
-          // initial={{ opacity: 0 }}
-          // exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          exit={{ opacity: 0 }}
           animate={{
             x: !isNil(annotationNode.x) ? annotationNode.x : 0,
             y: !isNil(annotationNode.y) ? annotationNode.y : 0,
@@ -295,13 +295,22 @@ export default function Chart({
         return (
           <motion.line
             key={i}
-            // initial={{ opacity: 0 }}
-            // exit={{ opacity: 0 }}
             stroke="black"
-            x1={`${(link.source as MySimulationNode).x}`}
-            y1={`${(link.source as MySimulationNode).y}`}
-            x2={`${(link.target as MySimulationNode).x}`}
-            y2={`${(link.target as MySimulationNode).y}`}
+            initial={{
+              x1: 0,
+              y1: 0,
+              x2: 0,
+              y2: 0,
+              opacity: 1,
+            }}
+            exit={{ opacity: 0 }}
+            animate={{
+              x1: (link.source as MySimulationNode).x ?? 0,
+              y1: (link.source as MySimulationNode).y ?? 0,
+              x2: (link.target as MySimulationNode).x ?? 0,
+              y2: (link.target as MySimulationNode).y ?? 0,
+              opacity: 1,
+            }}
             transition={motionTransition}
           />
         )
@@ -362,12 +371,12 @@ export default function Chart({
         <text x={0} y={15} transform="rotate(-90)" fontSize={10}>
           Y
         </text>
-        {/* <AnimatePresence> */}
-        {renderedLinks}
-        {renderedPoints}
-        {renderedAnnotationNodes}
-        {renderedAnnotationText}
-        {/* </AnimatePresence> */}
+        <AnimatePresence>
+          {renderedLinks}
+          {renderedPoints}
+          {renderedAnnotationNodes}
+          {renderedAnnotationText}
+        </AnimatePresence>
       </Group>
     </svg>
   )
