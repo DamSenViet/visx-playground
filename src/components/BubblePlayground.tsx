@@ -1,6 +1,6 @@
 import { ParentSize } from '@visx/responsive'
 import styled from 'styled-components'
-import Chart from './Chart'
+import Chart from '../Chart'
 import { scaleOrdinal } from 'd3-scale'
 import {
   symbolCircle,
@@ -35,10 +35,11 @@ const Container = styled.div`
   height: 100%;
   width: 100%;
   display: grid;
-  grid-template-columns: 150px 1fr;
+  overflow: hidden;
+  grid-template-columns: auto 1fr;
 `
 
-const Playground = () => {
+const BubblePlayground = () => {
   // real versions are debounced
   const [yMargin, setYMargin] = useState(40)
   const debouncedYMargin = useDebounce(yMargin, 300)
@@ -91,6 +92,7 @@ const Playground = () => {
       <Container>
         <ControlsArea>
           <Button onClick={handleRandomize}>Randomize Points</Button>
+          <br />
           <Button onClick={handleShuffleShapes}>Shuffle Shapes</Button>
           <div>
             Points #
@@ -144,4 +146,4 @@ const Playground = () => {
   )
 }
 
-export { Playground }
+export { BubblePlayground as Playground }

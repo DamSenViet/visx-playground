@@ -155,44 +155,40 @@ export default function Chart({
       ) as [PointNode[], AnnotationNode[], SimulationLink[]],
     [xScale, yScale, points]
   )
-  const [, , links] = allNodes
+  const [pointNodes, annotationNodes, links] = allNodes
 
-  const positionedAllNodes = useMemo(
-    () =>
-      produce(allNodes, ([pointNodes, annotationNodes, links]) => {
-        const simulation = forceSimulation<MySimulationNode>([
-          ...pointNodes,
-          ...annotationNodes,
-        ])
-        simulation
-          .force(
-            'connector',
-            forceLink<MySimulationNode, SimulationLink>(links).distance(50)
-          )
-          .force(
-            'repulsion',
-            forceManyBody<MySimulationNode>().strength((d) =>
-              d.type === 'annotation' ? -30 : 0
-            )
-          )
-          .force(
-            'prevent-overlap',
-            forceCollide<MySimulationNode>().radius((d) => {
-              if (d.type === 'annotation') return d.data.length * 4
-              return 4
-            })
-          )
-          .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
-        // run simulation until end
-        const ticksToStable = Math.ceil(
-          Math.log(simulation.alphaMin()) /
-            Math.log(1 - simulation.alphaDecay())
+  const positionedAllNodes = useMemo(() => {
+    const simulation = forceSimulation<MySimulationNode>([
+      ...pointNodes,
+      ...annotationNodes,
+    ])
+    simulation
+      .force(
+        'connector',
+        forceLink<MySimulationNode, SimulationLink>(links).distance(50)
+      )
+      .force(
+        'repulsion',
+        forceManyBody<MySimulationNode>().strength((d) =>
+          d.type === 'annotation' ? -30 : 0
         )
-        // NOTE: try not to rely on many simulation ticks too costly...
-        simulation.tick(5)
-      }),
-    [allNodes, xMax, yMax]
-  )
+      )
+      .force(
+        'prevent-overlap',
+        forceCollide<MySimulationNode>().radius((d) => {
+          if (d.type === 'annotation') return d.data.length * 4
+          return 4
+        })
+      )
+      .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
+    // run simulation until end
+    const ticksToStable = Math.ceil(
+      Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())
+    )
+    // NOTE: try not to rely on many simulation ticks too costly...
+    simulation.tick(5)
+    return [pointNodes, annotationNodes, links] as const
+  }, [xMax, yMax, links, annotationNodes, pointNodes])
 
   const positionedAnnotationNodes = positionedAllNodes[1]
 

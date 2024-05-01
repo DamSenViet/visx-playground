@@ -1,10 +1,62 @@
 import 'normalize.css'
-import { Playground } from './Playground'
+import styled from 'styled-components'
+import { Playground } from './components/BubblePlayground'
+import { Tabs, TabsProps } from 'antd'
+import { DashboardOutlined, DotChartOutlined } from '@ant-design/icons'
+
+const StyledTabs = styled(Tabs)`
+  height: 100%;
+  position: relative;
+  &&& {
+    .ant-tabs-content-holder {
+      justify-items: stretch;
+      align-items: stretch;
+    }
+    .ant-tabs-content {
+      height: 100%;
+    }
+    .ant-tabs-nav {
+      margin: 0;
+    }
+    .ant-tabs-nav-wrap {
+      padding-left: 16px;
+    }
+  }
+`
+
+const items: TabsProps['items'] = [
+  {
+    key: 'Visx + Framer Bubble',
+    label: 'Bubble Chart',
+    children: <Playground />,
+    icon: <DotChartOutlined />,
+    style: {
+      height: '100%',
+      overflow: 'hidden',
+      position: 'relative',
+    },
+  },
+  {
+    key: 'RD3 Dashboard',
+    label: 'RD3 Dashboard',
+    children: 'Dashboard',
+    icon: <DashboardOutlined />,
+    style: {
+      height: '100%',
+      overflow: 'hidden',
+      position: 'relative',
+    },
+  },
+]
 
 function App() {
   return (
     <>
-      <Playground />
+      <StyledTabs
+        items={items}
+        size="small"
+        indicator={{ size: 100, align: 'center' }}
+      />
     </>
   )
 }
