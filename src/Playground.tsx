@@ -13,10 +13,10 @@ import {
 } from 'd3-shape'
 import { PointsRange } from '@visx/mock-data/lib/generators/genRandomNormalPoints'
 import { Button, Slider } from 'antd'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { randomInt, randomLcg } from 'd3-random'
 import { useDebounce } from '@uidotdev/usehooks'
-import { debounce, range, shuffle } from 'lodash-es'
+import { range, shuffle } from 'lodash-es'
 import { MotionConfig } from 'framer-motion'
 
 const ChartArea = styled(ParentSize)`
@@ -57,12 +57,12 @@ const Playground = () => {
       .map(() => [generator(), generator(), generator()] as PointsRange)
   }
 
-  const [pointSlide, setPointsSlide] = useState(10)
   const [pointsCount, setPointsCount] = useState(10)
-  const [points, setPoints] = useState(genRandomPoints(200, 0, 100))
+  const debouncedPointsCount = useDebounce(pointsCount, 300)
+  const [points, setPoints] = useState(genRandomPoints(100, 0, 100))
   const filteredPoints = useMemo(
-    () => points.slice(0, pointsCount),
-    [points, pointsCount]
+    () => points.slice(0, debouncedPointsCount),
+    [points, debouncedPointsCount]
   )
 
   const [shapes, setShapes] = useState([
@@ -78,14 +78,6 @@ const Playground = () => {
     () => scaleOrdinal(range(0, 10), shapes),
     [shapes]
   )
-
-  const debouncedSetPointsCount = useCallback(debounce(setPointsCount, 150), [
-    setPointsCount,
-  ])
-
-  useEffect(() => {
-    debouncedSetPointsCount(pointSlide)
-  }, [pointSlide, debouncedSetPointsCount])
 
   const handleShuffleShapes = () => {
     setShapes(shuffle(shapes.slice()))
@@ -106,8 +98,8 @@ const Playground = () => {
               step={5}
               min={5}
               max={200}
-              onChange={setPointsSlide}
-              value={pointSlide}
+              onChange={setPointsCount}
+              value={pointsCount}
             />
           </div>
           <div>

@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue } from 'framer-motion'
+import { Point, animate, motion, useMotionValue } from 'framer-motion'
 import { Group } from '@visx/group'
 import { scaleLinear } from '@visx/scale'
 import {
@@ -23,8 +23,9 @@ import { useEffect, useMemo } from 'react'
 import { SymbolType, symbol, symbolCircle } from 'd3-shape'
 import { interpolate } from 'flubber'
 import { ScaleOrdinal } from 'd3-scale'
+import { produce } from 'immer'
 
-const motionTransition = { type: 'spring', damping: 14 } as const
+const motionTransition = { type: 'spring', damping: 15 } as const
 
 // accessors
 const xAccessor = (d: PointsRange) => d[0]
@@ -68,7 +69,8 @@ const useMotionPathData = (d: string) => {
 
   useEffect(() => {
     animate(0, 1, {
-      type: motionTransition.type,
+      type: 'tween',
+      ease: 'easeInOut',
       onUpdate: (progress) => motionValue.set(interpolator(progress)),
     })
   }, [interpolator, motionValue])
@@ -125,7 +127,7 @@ export default function Chart({
     [zMax, origZScale]
   )
 
-  const [pointNodes, annotationNodes, links] = useMemo(
+  const allNodes = useMemo(
     () =>
       unzip(
         points.map((point, i) => {
@@ -153,39 +155,46 @@ export default function Chart({
       ) as [PointNode[], AnnotationNode[], SimulationLink[]],
     [xScale, yScale, points]
   )
+  const [, , links] = allNodes
 
-  const positionedAnnotationNode = useMemo(() => {
-    const simulation = forceSimulation<MySimulationNode>([
-      ...pointNodes,
-      ...annotationNodes,
-    ])
-    simulation
-      .force(
-        'connector',
-        forceLink<MySimulationNode, SimulationLink>(links).distance(50)
-      )
-      .force(
-        'repulsion',
-        forceManyBody<MySimulationNode>().strength((d) =>
-          d.type === 'annotation' ? -30 : 0
+  const positionedAllNodes = useMemo(
+    () =>
+      produce(allNodes, ([pointNodes, annotationNodes, links]) => {
+        const simulation = forceSimulation<MySimulationNode>([
+          ...pointNodes,
+          ...annotationNodes,
+        ])
+        simulation
+          .force(
+            'connector',
+            forceLink<MySimulationNode, SimulationLink>(links).distance(50)
+          )
+          .force(
+            'repulsion',
+            forceManyBody<MySimulationNode>().strength((d) =>
+              d.type === 'annotation' ? -30 : 0
+            )
+          )
+          .force(
+            'prevent-overlap',
+            forceCollide<MySimulationNode>().radius((d) => {
+              if (d.type === 'annotation') return d.data.length * 4
+              return 4
+            })
+          )
+          .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
+        // run simulation until end
+        const ticksToStable = Math.ceil(
+          Math.log(simulation.alphaMin()) /
+            Math.log(1 - simulation.alphaDecay())
         )
-      )
-      .force(
-        'prevent-overlap',
-        forceCollide<MySimulationNode>().radius((d) => {
-          if (d.type === 'annotation') return d.data.length * 4
-          return 4
-        })
-      )
-      .force('boundary', forceBoundary<MySimulationNode>(0, 0, xMax, yMax))
-    // run simulation until end
-    const ticksToStable = Math.ceil(
-      Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())
-    )
-    // NOTE: try not to rely on many simulation ticks too costly...
-    simulation.tick(10)
-    return annotationNodes
-  }, [pointNodes, annotationNodes, links, xMax, yMax])
+        // NOTE: try not to rely on many simulation ticks too costly...
+        simulation.tick(5)
+      }),
+    [allNodes, xMax, yMax]
+  )
+
+  const positionedAnnotationNodes = positionedAllNodes[1]
 
   // run the force simulation
 
@@ -221,13 +230,14 @@ export default function Chart({
           top={yMax}
           left={0}
           scale={xScale}
-          numTicks={12}
+          numTicks={15}
           animationTrajectory="center"
         />
         <AnimatedAxis
           orientation={Orientation.left}
           top={0}
           left={0}
+          numTicks={15}
           scale={yScale}
           tickLabelProps={{ textAnchor: 'end', y: '0.25em', x: '-0.25em' }}
           animationTrajectory="center"
@@ -275,7 +285,7 @@ export default function Chart({
             </motion.g>
           )
         })}
-        {positionedAnnotationNode.map((annotationNode, i) => (
+        {positionedAnnotationNodes.map((annotationNode, i) => (
           <motion.g
             key={annotationNode.data}
             animate={{
@@ -290,7 +300,7 @@ export default function Chart({
             />
           </motion.g>
         ))}
-        {positionedAnnotationNode.map((annotationNode) => (
+        {positionedAnnotationNodes.map((annotationNode) => (
           <motion.text
             key={annotationNode.data}
             animate={{
