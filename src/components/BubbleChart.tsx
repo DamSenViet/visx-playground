@@ -17,7 +17,7 @@ import {
   SimulationLinkDatum,
   forceManyBody,
 } from 'd3-force'
-import forceBoundary from './forceBoundary'
+import forceBoundary from '../forceBoundary'
 import { unzip, isNil } from 'lodash-es'
 import { useMemo, useEffect } from 'react'
 import { SymbolType, symbol, symbolCircle } from 'd3-shape'
@@ -88,7 +88,7 @@ function Shape({
   return <motion.path d={pathData} fill={fill} transition={motionTransition} />
 }
 
-export default function Chart({
+export default function BubbleChart({
   width,
   height,
   margin = defaultMargin,

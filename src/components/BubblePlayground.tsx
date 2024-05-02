@@ -1,6 +1,6 @@
 import { ParentSize } from '@visx/responsive'
 import styled from 'styled-components'
-import Chart from '../Chart'
+import BubbleChart from './BubbleChart'
 import { scaleOrdinal } from 'd3-scale'
 import {
   symbolCircle,
@@ -13,13 +13,13 @@ import {
 } from 'd3-shape'
 import { PointsRange } from '@visx/mock-data/lib/generators/genRandomNormalPoints'
 import { Button, Slider } from 'antd'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, memo } from 'react'
 import { randomInt, randomLcg } from 'd3-random'
 import { useDebounce } from '@uidotdev/usehooks'
 import { range, shuffle } from 'lodash-es'
 import { MotionConfig } from 'framer-motion'
 
-// const EnhancedChart = memo(Chart)
+const MemoizedChart = memo(BubbleChart)
 const MAX_POINTS_COUNT = 500
 
 const ChartArea = styled(ParentSize)`
@@ -142,7 +142,7 @@ const BubblePlayground = () => {
         </ControlsArea>
         <ChartArea debounceTime={300}>
           {({ width, height }) => (
-            <Chart
+            <MemoizedChart
               width={width}
               height={height}
               margin={debouncedChartMargins}
