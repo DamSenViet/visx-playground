@@ -24,7 +24,8 @@ import { SymbolType, symbol, symbolCircle } from 'd3-shape'
 import { interpolate } from 'flubber'
 import { ScaleOrdinal } from 'd3-scale'
 
-const motionTransition = { type: 'spring', damping: 15 } as const
+const motionTransition = { type: 'spring', bounce: 0.25 } as const // const motionTransition = { duration: 0.25, ease: 'easeInOut' } as const
+const delay = 0.003
 
 // accessors
 const xAccessor = (d: PointsRange) => d[0]
@@ -39,6 +40,9 @@ export type ChartProps = {
   symbolScale: ScaleOrdinal<number, SymbolType, never>
   points: PointsRange[]
   margin?: { top: number; right: number; bottom: number; left: number }
+  shapeSize?: number
+  showLinks?: boolean
+  showAnnotations?: boolean
 }
 
 interface AnnotationNode extends SimulationNodeDatum {
@@ -58,6 +62,7 @@ interface ShapeProps {
   size: number
   fill?: string
   disable?: boolean
+  transition?: typeof motionTransition
 }
 
 const useMotionPathData = (d: string) => {
@@ -81,11 +86,12 @@ function Shape({
   shape = symbolCircle,
   size = 10,
   fill = '#f18686',
+  transition = motionTransition,
 }: ShapeProps) {
   const pathData = useMotionPathData(
     symbol<number>(shape).size(Math.pow(size, 2))()!
   )
-  return <motion.path d={pathData} fill={fill} transition={motionTransition} />
+  return <motion.path d={pathData} fill={fill} transition={transition} />
 }
 
 export default function BubbleChart({
@@ -94,6 +100,9 @@ export default function BubbleChart({
   margin = defaultMargin,
   points,
   symbolScale,
+  showAnnotations,
+  showLinks,
+  shapeSize = 10,
 }: ChartProps) {
   const origXScale = useMemo(
     () =>
@@ -147,34 +156,32 @@ export default function BubbleChart({
     [zMax, origZScale]
   )
 
-  const allNodes = useMemo(
-    () =>
-      unzip(
-        points.map((point, i) => {
-          const pointNode: PointNode = {
-            type: 'point',
-            x: xScale(xAccessor(point)),
-            y: yScale(yAccessor(point)),
-            data: point,
-            fx: xScale(xAccessor(point)),
-            fy: yScale(yAccessor(point)),
-          }
-          const annotationNode: AnnotationNode = {
-            type: 'annotation',
-            x: xScale(xAccessor(point)),
-            y: yScale(yAccessor(point)),
-            data: `Point ${i}`,
-          } as AnnotationNode
-          const link: SimulationLinkDatum<MySimulationNode> = {
-            source: pointNode,
-            target: annotationNode,
-            index: i,
-          }
-          return [pointNode, annotationNode, link]
-        })
-      ) as [PointNode[], AnnotationNode[], SimulationLink[]],
-    [xScale, yScale, points]
-  )
+  const allNodes = useMemo(() => {
+    return unzip(
+      points.map((point, i) => {
+        const pointNode: PointNode = {
+          type: 'point',
+          x: xScale(xAccessor(point)),
+          y: yScale(yAccessor(point)),
+          data: point,
+          fx: xScale(xAccessor(point)),
+          fy: yScale(yAccessor(point)),
+        }
+        const annotationNode: AnnotationNode = {
+          type: 'annotation',
+          x: xScale(xAccessor(point)),
+          y: yScale(yAccessor(point)),
+          data: `Point ${i}`,
+        } as AnnotationNode
+        const link: SimulationLinkDatum<MySimulationNode> = {
+          source: pointNode,
+          target: annotationNode,
+          index: i,
+        }
+        return [pointNode, annotationNode, link]
+      })
+    ) as [PointNode[], AnnotationNode[], SimulationLink[]]
+  }, [xScale, yScale, points])
   const [pointNodes, annotationNodes, links] = allNodes
 
   const simulation = useMemo(
@@ -220,78 +227,94 @@ export default function BubbleChart({
   const renderedPoints = useMemo(
     () =>
       points.map((point, i) => {
+        const transition = {
+          ...motionTransition,
+          delay: delay * i,
+        }
+        const x = xScale(xAccessor(point)) ?? 0
+        const y = yScale(yAccessor(point)) ?? 0
         return (
           <motion.g
             key={`bubble-${i}`}
             data-index={i}
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0, x, y }}
+            animate={{ opacity: 1, x, y }}
             exit={{ opacity: 0 }}
-            animate={{
-              x: xScale(xAccessor(point)) ?? 0,
-              y: yScale(yAccessor(point)) ?? 0,
-              opacity: 1,
-            }}
-            transition={motionTransition}
+            transition={transition}
           >
             <Shape
               shape={symbolScale(i)}
-              size={10}
+              size={shapeSize}
               fill="rgba(54, 151, 255, 0.5)"
             />
           </motion.g>
         )
       }),
-    [points, symbolScale, xScale, yScale]
+    [points, symbolScale, xScale, yScale, shapeSize]
   )
 
   const renderedAnnotationNodes = useMemo(
     () =>
-      positionedAnnotationNodes.map((annotationNode, i) => (
-        <motion.g
-          key={`annotation-bubble-${annotationNode.data}`}
-          initial={{ opacity: 0 }}
-          exit={{ opacity: 0 }}
-          animate={{
-            x: !isNil(annotationNode.x) ? annotationNode.x : 0,
-            y: !isNil(annotationNode.y) ? annotationNode.y : 0,
-            opacity: 1,
-          }}
-          transition={motionTransition}
-        >
-          <Shape
-            shape={symbolScale(i)}
-            size={annotationNode.data.length || 0}
-          />
-        </motion.g>
-      )),
+      positionedAnnotationNodes.map((annotationNode, i) => {
+        const transition = {
+          ...motionTransition,
+          delay: delay * i,
+        }
+        const x = !isNil(annotationNode.x) ? annotationNode.x : 0
+        const y = !isNil(annotationNode.y) ? annotationNode.y : 0
+        return (
+          <motion.g
+            key={`annotation-bubble-${annotationNode.data}`}
+            initial={{ opacity: 0, x, y }}
+            animate={{ x, y, opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+          >
+            <Shape
+              shape={symbolScale(i)}
+              size={annotationNode.data.length || 0}
+            />
+          </motion.g>
+        )
+      }),
     [symbolScale, positionedAnnotationNodes]
   )
 
   const renderedAnnotationText = useMemo(
     () =>
-      positionedAnnotationNodes.map((annotationNode) => (
-        <motion.text
-          key={`annotation-text-${annotationNode.data}`}
-          initial={{ opacity: 0 }}
-          exit={{ opacity: 0 }}
-          animate={{
-            x: !isNil(annotationNode.x) ? annotationNode.x : 0,
-            y: !isNil(annotationNode.y) ? annotationNode.y : 0,
-            opacity: 1,
-          }}
-          textAnchor="middle"
-          dominantBaseline={'middle'}
-          transition={motionTransition}
-        >
-          {annotationNode.data}
-        </motion.text>
-      )),
+      positionedAnnotationNodes.map((annotationNode, i) => {
+        const transition = {
+          ...motionTransition,
+          delay: delay * i,
+        }
+        return (
+          <motion.text
+            key={`annotation-text-${annotationNode.data}`}
+            initial={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            animate={{
+              x: !isNil(annotationNode.x) ? annotationNode.x : 0,
+              y: !isNil(annotationNode.y) ? annotationNode.y : 0,
+              opacity: 1,
+            }}
+            textAnchor="middle"
+            dominantBaseline={'middle'}
+            transition={transition}
+          >
+            {annotationNode.data}
+          </motion.text>
+        )
+      }),
     [positionedAnnotationNodes]
   )
 
   const renderedLinks = useMemo(
     () =>
       links.map((link, i) => {
+        const transition = {
+          ...motionTransition,
+          delay: delay * i,
+        }
         return (
           <motion.line
             key={i}
@@ -311,11 +334,24 @@ export default function BubbleChart({
               y2: (link.target as MySimulationNode).y ?? 0,
               opacity: 1,
             }}
-            transition={motionTransition}
+            transition={transition}
           />
         )
       }),
     [links]
+  )
+
+  // gonna need this in the future
+  const entityCount = useMemo(
+    () =>
+      renderedAnnotationNodes.length +
+      renderedPoints.length +
+      renderedLinks.length,
+    [
+      renderedAnnotationNodes.length,
+      renderedPoints.length,
+      renderedLinks.length,
+    ]
   )
 
   if (width < 10) return null
@@ -372,10 +408,10 @@ export default function BubbleChart({
           Y
         </text>
         <AnimatePresence>
-          {renderedLinks}
           {renderedPoints}
-          {renderedAnnotationNodes}
-          {renderedAnnotationText}
+          {showLinks ? renderedLinks : null}
+          {showAnnotations ? renderedAnnotationNodes : null}
+          {showAnnotations ? renderedAnnotationText : null}
         </AnimatePresence>
       </Group>
     </svg>
