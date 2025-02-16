@@ -1,4 +1,10 @@
-import { animate, motion, useMotionValue, AnimatePresence } from 'framer-motion'
+import {
+  animate,
+  motion,
+  useMotionValue,
+  AnimatePresence,
+  useMotionValueEvent,
+} from 'framer-motion'
 import { Group } from '@visx/group'
 import { scaleLinear } from '@visx/scale'
 import {
@@ -23,16 +29,18 @@ import { useMemo, useEffect } from 'react'
 import { SymbolType, symbol, symbolCircle } from 'd3-shape'
 import { interpolate } from 'flubber'
 import { ScaleOrdinal } from 'd3-scale'
+import SvgRenderWarning from './RenderWarning'
 
+const entityLimit = 4000
 const motionTransition = { type: 'spring', bounce: 0.25 } as const // const motionTransition = { duration: 0.25, ease: 'easeInOut' } as const
-const delay = 0.003
+const delay = 0.005
 
 // accessors
 const xAccessor = (d: PointsRange) => d[0]
 const yAccessor = (d: PointsRange) => d[1]
 const zAccessor = (d: PointsRange) => d[2]
 
-const defaultMargin = { top: 40, right: 50, bottom: 50, left: 40 }
+const defaultMargin = { top: 40, right: 50, bottom: 70, left: 40 }
 
 export type ChartProps = {
   width: number
@@ -43,6 +51,7 @@ export type ChartProps = {
   shapeSize?: number
   showLinks?: boolean
   showAnnotations?: boolean
+  animate?: boolean
 }
 
 interface AnnotationNode extends SimulationNodeDatum {
@@ -103,6 +112,7 @@ export default function BubbleChart({
   showAnnotations,
   showLinks,
   shapeSize = 10,
+  animate = true,
 }: ChartProps) {
   const origXScale = useMemo(
     () =>
@@ -223,6 +233,16 @@ export default function BubbleChart({
 
   // run the force simulation
 
+  // data computations done, decide how to render
+  const willAnimate = useMemo(() => {
+    // placeholders
+    const entityCount = 100
+    const animationIntensity = 10
+    const animationLoad = entityCount * animationIntensity
+    const animationThreshold = 10000
+    return animate && animationLoad < animationThreshold
+  }, [animate])
+
   // annotation nodes are now positioned
   const renderedPoints = useMemo(
     () =>
@@ -233,20 +253,26 @@ export default function BubbleChart({
         }
         const x = xScale(xAccessor(point)) ?? 0
         const y = yScale(yAccessor(point)) ?? 0
+        const fill = 'rgba(54, 151, 255, 0.5)'
+        if (!willAnimate) {
+          const d = symbol(symbolScale(i)).size(Math.pow(shapeSize, 2))()!
+          const transform = `translate(${x}, ${y})`
+          return (
+            <g key={`bubble-${i}`} data-index={i} transform={transform}>
+              <path d={d} fill={fill}></path>
+            </g>
+          )
+        }
         return (
           <motion.g
             key={`bubble-${i}`}
             data-index={i}
-            initial={{ opacity: 0, x, y }}
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1, x, y }}
             exit={{ opacity: 0 }}
             transition={transition}
           >
-            <Shape
-              shape={symbolScale(i)}
-              size={shapeSize}
-              fill="rgba(54, 151, 255, 0.5)"
-            />
+            <Shape shape={symbolScale(i)} size={shapeSize} fill={fill} />
           </motion.g>
         )
       }),
@@ -344,19 +370,27 @@ export default function BubbleChart({
   // gonna need this in the future
   const entityCount = useMemo(
     () =>
-      renderedAnnotationNodes.length +
       renderedPoints.length +
-      renderedLinks.length,
+      (showAnnotations ? renderedAnnotationNodes.length : 0) +
+      (showLinks ? renderedLinks.length : 0),
     [
-      renderedAnnotationNodes.length,
       renderedPoints.length,
+      showAnnotations,
+      renderedAnnotationNodes.length,
+      showLinks,
       renderedLinks.length,
     ]
   )
 
-  if (width < 10) return null
-  return (
-    <svg width={width} height={height}>
+  if (entityCount > entityLimit)
+    return (
+      <svg width={width} height={height}>
+        <SvgRenderWarning width={width} height={height} />
+      </svg>
+    )
+
+  const renderedSvgContent = (
+    <>
       <rect
         x={0}
         y={0}
@@ -414,6 +448,12 @@ export default function BubbleChart({
           {showAnnotations ? renderedAnnotationText : null}
         </AnimatePresence>
       </Group>
+    </>
+  )
+
+  return (
+    <svg width={width} height={height}>
+      {renderedSvgContent}
     </svg>
   )
 }

@@ -17,7 +17,7 @@ import { useMemo, useState, memo, useCallback } from 'react'
 import { randomInt, randomLcg } from 'd3-random'
 import { useDebounce } from '@uidotdev/usehooks'
 import { range, shuffle } from 'lodash-es'
-import { MotionConfig } from 'framer-motion'
+import { animate, MotionConfig } from 'framer-motion'
 import { CheckboxChangeEvent } from 'antd/es/checkbox'
 
 const MemoizedChart = memo(BubbleChart)
@@ -65,6 +65,7 @@ const BubblePlayground = () => {
   const [showAnnotations, setShowAnnotations] = useState(false)
   const [shapeSize, setShapeSize] = useState(10)
   const debouncedShapeSize = useDebounce(shapeSize, 300)
+  const [animate, setAnimate] = useState(true)
 
   const [pointsCount, setPointsCount] = useState(10)
   const debouncedPointsCount = useDebounce(pointsCount, 300)
@@ -110,6 +111,9 @@ const BubblePlayground = () => {
     },
     [setShowLinks]
   )
+  const handleAnimateChange = useCallback((event: CheckboxChangeEvent) => {
+    setAnimate(event.target.checked)
+  }, [])
 
   const debouncedChartMargins = useMemo(
     () => ({
@@ -177,6 +181,9 @@ const BubblePlayground = () => {
             <br />
             <Checkbox checked={showLinks} onChange={handleShowLinksChange} />
             Show Links
+            <br />
+            <Checkbox checked={animate} onChange={handleAnimateChange} />
+            Animate
           </div>
         </ControlsArea>
         <ChartArea debounceTime={500}>
@@ -190,6 +197,7 @@ const BubblePlayground = () => {
               showAnnotations={showAnnotations}
               showLinks={showLinks}
               shapeSize={debouncedShapeSize}
+              animate={animate}
             />
           )}
         </ChartArea>
