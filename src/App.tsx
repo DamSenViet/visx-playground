@@ -1,8 +1,13 @@
 import 'normalize.css'
 import styled from 'styled-components'
-import { Playground } from './components/BubblePlayground'
+import { BubblePlayground } from './components/BubblePlayground'
+import { CartesianPlayground } from './components/CartesianPlayground'
 import { Tabs, TabsProps } from 'antd'
-import { DashboardOutlined, DotChartOutlined } from '@ant-design/icons'
+import {
+  AreaChartOutlined,
+  DashboardOutlined,
+  DotChartOutlined,
+} from '@ant-design/icons'
 
 const StyledTabs = styled(Tabs)`
   height: 100%;
@@ -26,9 +31,20 @@ const StyledTabs = styled(Tabs)`
 
 const items: TabsProps['items'] = [
   {
+    key: 'Visx + Framer Cartesian',
+    label: 'Cartesian',
+    children: <CartesianPlayground />,
+    icon: <AreaChartOutlined />,
+    style: {
+      height: '100%',
+      overflow: 'hidden',
+      position: 'relative',
+    },
+  },
+  {
     key: 'Visx + Framer Bubble',
     label: 'Bubble Chart',
-    children: <Playground />,
+    children: <BubblePlayground />,
     icon: <DotChartOutlined />,
     style: {
       height: '100%',

@@ -39,7 +39,7 @@ const genRandomPoints = (
     .map(() => [generator(), generator(), generator()] as PointsRange)
 }
 
-const BubblePlayground = () => {
+const CartesianPlayground = () => {
   // real versions are debounced
   const [yMargin, setYMargin] = useState(40)
   const debouncedYMargin = useDebounce(yMargin, 300)
@@ -193,4 +193,4 @@ const BubblePlayground = () => {
   )
 }
 
-export { BubblePlayground }
+export { CartesianPlayground }
