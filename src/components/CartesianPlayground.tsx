@@ -1,4 +1,4 @@
-import BubbleChart from './BubbleChart'
+import { CartesianChart } from './CartesianChart'
 import { scaleOrdinal } from 'd3-scale'
 import {
   symbolCircle,
@@ -24,7 +24,7 @@ import {
   PlaygroundControlsGroup,
 } from './shared'
 
-const MemoizedChart = memo(BubbleChart)
+const MemoizedChart = memo(CartesianChart)
 const MAX_POINTS_COUNT = 1000
 
 const genRandomPoints = (
@@ -45,10 +45,6 @@ const CartesianPlayground = () => {
   const debouncedYMargin = useDebounce(yMargin, 300)
   const [xMargin, setXMargin] = useState(40)
   const debouncedXMargin = useDebounce(xMargin, 300)
-  const [showLinks, setShowLinks] = useState(false)
-  const [showAnnotations, setShowAnnotations] = useState(false)
-  const [shapeSize, setShapeSize] = useState(10)
-  const debouncedShapeSize = useDebounce(shapeSize, 300)
   const [animate, setAnimate] = useState(true)
 
   const [pointsCount, setPointsCount] = useState(10)
@@ -83,18 +79,6 @@ const CartesianPlayground = () => {
   const handleRandomize = useCallback(() => {
     setPoints(genRandomPoints(MAX_POINTS_COUNT, 0, 100, Math.random()))
   }, [setPoints])
-  const handleShowAnnotationsChange = useCallback(
-    (event: CheckboxChangeEvent) => {
-      setShowAnnotations(event.target.checked)
-    },
-    [setShowAnnotations]
-  )
-  const handleShowLinksChange = useCallback(
-    (event: CheckboxChangeEvent) => {
-      setShowLinks(event.target.checked)
-    },
-    [setShowLinks]
-  )
   const handleAnimateChange = useCallback((event: CheckboxChangeEvent) => {
     setAnimate(event.target.checked)
   }, [])
@@ -130,16 +114,6 @@ const CartesianPlayground = () => {
             />
           </PlaygroundControlsGroup>
           <PlaygroundControlsGroup>
-            Shape Size
-            <Slider
-              step={5}
-              min={10}
-              max={100}
-              onChange={setShapeSize}
-              value={shapeSize}
-            />
-          </PlaygroundControlsGroup>
-          <PlaygroundControlsGroup>
             X Margin
             <Slider
               step={5}
@@ -160,15 +134,6 @@ const CartesianPlayground = () => {
             />
           </PlaygroundControlsGroup>
           <PlaygroundControlsGroup>
-            <Checkbox
-              checked={showAnnotations}
-              onChange={handleShowAnnotationsChange}
-            />
-            Show Annotations
-            <br />
-            <Checkbox checked={showLinks} onChange={handleShowLinksChange} />
-            Show Links
-            <br />
             <Checkbox checked={animate} onChange={handleAnimateChange} />
             Animate
           </PlaygroundControlsGroup>
@@ -179,11 +144,6 @@ const CartesianPlayground = () => {
               width={width}
               height={height}
               margin={debouncedChartMargins}
-              points={filteredPoints}
-              symbolScale={symbolScale}
-              showAnnotations={showAnnotations}
-              showLinks={showLinks}
-              shapeSize={debouncedShapeSize}
               animate={animate}
             />
           )}
