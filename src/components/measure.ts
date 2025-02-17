@@ -78,6 +78,6 @@ export const getAxisSize = (
   const txtSizes = txtsMetrics.map(
     dimension === 'height' ? getTextMetricHeight : getTextMetricWidth
   )
-  console.log(labels, txtsMetrics)
+  // console.log(labels, txtsMetrics)
   return Math.max(0, ...txtSizes) + tickLength + tickLabelMargin
 }
