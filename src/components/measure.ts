@@ -59,11 +59,11 @@ export const getTextMetricDims = (txtMetrics: TextMetrics) => {
 
 /**
  * Computes the size of the axis given labels, font, and tick info.
- * @param labels
- * @param font
- * @param tickLength
- * @param tickLabelMargin
- * @param orientation
+ * @param labels The list of labels to render with the axis.
+ * @param font CSS `font` property value to apply to the rendered text.
+ * @param tickLength The tick axis tick length.
+ * @param tickLabelMargin The spacing between the tick label and the tick line.
+ * @param dimension - The dimension to measure.
  * @returns
  */
 export const getAxisSize = (
