@@ -10,15 +10,85 @@ import { ReactNode, useMemo } from 'react'
 import { getAxisSize } from './measure'
 import { uniq } from 'lodash-es'
 
+interface ChartAreaAxisConfig {
+  /**
+   * The label for the axis.
+   */
+  label?: string
+  /**
+   * Scale dictating the values on the domain.
+   */
+  scale: unknown
+  /**
+   * Whether to show the axis.
+   */
+  show?: boolean
+  /**
+   * Whether axis is internally positioned.
+   */
+  internal?: boolean
+  /**
+   * Whether label is internally positioned.
+   */
+  internalLabel?: boolean
+  /**
+   * Spacing in px between the axis and plot area when externally positioned.
+   * Spacing in px between the plot area edge and the axis when internally positioned.
+   */
+  margin?: number
+  /**
+   * Whether to show the tick line.
+   */
+  showTickLine?: boolean
+  /**
+   * The tick length of the axis.
+   */
+  tickLineLength?: number
+  /**
+   * Whether to show the tick label.
+   */
+  showTickLabel?: boolean
+  /**
+   * Tick label layout strategies.
+   *  Different strategies applies to different layout orientations.
+   *  For horizontal axis:
+   * - auto - angled if nothing fits, alternating if it kinda fits, fixed otherwise
+   * - fixed - fixed layout
+   * - alternating - applies offsets to alternating labels
+   * - angled - applies the necessary amount of angular rotation to make the labels fit
+   *  For vertical axis:
+   * - fixed
+   */
+  tickLabelLayout?: 'auto' | 'fixed' | 'alternating' | 'angled'
+  /**
+   * Spacing between the tick line and the tick label.
+   */
+  tickLabelMargin?: number
+}
+
+interface ChartAreaAxesConfig {
+  bottom?: ChartAreaAxisConfig
+  top?: ChartAreaAxisConfig
+  left?: ChartAreaAxisConfig
+  right?: ChartAreaAxisConfig
+}
+
 interface CartesianChartProps {
+  /**
+   * Chart width.
+   */
   width: number
+  /**
+   * Chart height.
+   */
   height: number
-  margin?: {
-    bottom: number
-    top: number
-    left: number
-    right: number
-  }
+  /**
+   * Chart axis configurations by positional component.
+   */
+  axes?: ChartAreaAxesConfig
+  /**
+   * Whether to animate the cartesian chart layout.
+   */
   animate?: boolean
   children?: ({ width, height }: { width: number; height: number }) => ReactNode
 }
@@ -148,31 +218,19 @@ const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
   // if scales are bands, need to compute another derived scale
   // where outer padding is effectively 0
   const bottomAxisScale = useMemo(
-    () =>
-      scaleBand(bottomAxisTickLabels, [0, plotWidth])
-        .paddingOuter(0.5)
-        .paddingInner(0),
+    () => scaleBand(bottomAxisTickLabels, [0, plotWidth]),
     [bottomAxisTickLabels, plotWidth]
   )
   const topAxisScale = useMemo(
-    () =>
-      scaleBand(topAxisTickLabels, [0, plotWidth])
-        .paddingOuter(0.5)
-        .paddingInner(0),
+    () => scaleBand(topAxisTickLabels, [0, plotWidth]),
     [topAxisTickLabels, plotWidth]
   )
   const leftAxisScale = useMemo(
-    () =>
-      scaleBand(leftAxisTickLabels, [0, plotHeight])
-        .paddingOuter(0.5)
-        .paddingInner(0),
+    () => scaleBand(leftAxisTickLabels, [0, plotHeight]),
     [leftAxisTickLabels, plotHeight]
   )
   const rightAxisScale = useMemo(
-    () =>
-      scaleBand(rightAxisTickLabels, [0, plotHeight])
-        .paddingOuter(0.5)
-        .paddingInner(0),
+    () => scaleBand(rightAxisTickLabels, [0, plotHeight]),
     [rightAxisTickLabels, plotHeight]
   )
 
