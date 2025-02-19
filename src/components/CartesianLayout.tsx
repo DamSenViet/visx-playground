@@ -8,9 +8,10 @@ import {
 import { scaleBand, scaleOrdinal } from 'd3-scale'
 import { ReactNode, useMemo } from 'react'
 import { getAxisSize } from './measure'
-import { uniq } from 'lodash-es'
+import { defaults, uniq } from 'lodash-es'
+import { Positional } from './primitives/types'
 
-interface ChartAreaAxisConfig {
+interface CartesianLayoutAxisConfig {
   /**
    * The label for the axis.
    */
@@ -66,14 +67,9 @@ interface ChartAreaAxisConfig {
   tickLabelMargin?: number
 }
 
-interface ChartAreaAxesConfig {
-  bottom?: ChartAreaAxisConfig
-  top?: ChartAreaAxisConfig
-  left?: ChartAreaAxisConfig
-  right?: ChartAreaAxisConfig
-}
+type CartesianLayoutAxesConfig = Partial<Positional<CartesianLayoutAxisConfig>>
 
-interface CartesianChartProps {
+interface CartesianLayoutProps {
   /**
    * Chart width.
    */
@@ -85,15 +81,36 @@ interface CartesianChartProps {
   /**
    * Chart axis configurations by positional component.
    */
-  axes?: ChartAreaAxesConfig
+  axes?: CartesianLayoutAxesConfig
   /**
    * Whether to animate the cartesian chart layout.
    */
   animate?: boolean
+  /**
+   * The margins between spacing the box and layout start.
+   * Acts more like chart padding.
+   * Note: axis have their own additional margin between themselves and the plot area.
+   */
+  margin: Partial<Positional<number>>
   children?: ({ width, height }: { width: number; height: number }) => ReactNode
 }
 
-const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
+const defaultMargin = {
+  bottom: 0,
+  top: 0,
+  left: 0,
+  right: 0,
+}
+
+// maybe this should be a hook instead of a layout component...
+// need to be able to detect plot sizes...
+
+const CartesianLayout = ({
+  width,
+  height,
+  margin,
+  children,
+}: CartesianLayoutProps) => {
   const bottomAxisTickLength = 8
   const topAxisTickLength = 8
   const leftAxisTickLength = 8
@@ -103,6 +120,8 @@ const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
   const topAxisTickLabelMargin = 3
   const leftAxisTickLabelMargin = 3
   const rightAxisTickLabelMargin = 3
+
+  const resolvedMargin = defaults(margin, defaultMargin)
 
   // @TODO: IMPLEMENT ALTERNATING TICK LABEL CALCS INTO THE AXIS DIMENSIONS
   const altBottomAxisTickLabels = false
@@ -124,12 +143,6 @@ const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
   // must choose primary scales in each direction
   // const primaryXScale = [bottomAxisScale, topAxisScale].filter(Boolean).get(0)!
   // const primaryYScale = [leftAxisScale, rightAxisScale].filter(Boolean).get(0)!
-
-  // @TODO: IMPLEMENT ALL RELATED CALCULATIONS
-  const bottomChartPadding = 0
-  const topChartPadding = 0
-  const leftChartPadding = 0
-  const rightChartPadding = 0
 
   const showBottomAxis = true
   const showTopAxis = true
@@ -202,13 +215,19 @@ const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
     ? 0
     : rightAxisWidth + rightAxisMargin
 
-  let plotHeight = height
-  if (showBottomAxis && !isBottomAxisInternal)
-    plotHeight = Math.max(plotHeight - bottomSectionHeight, 0)
+  let plotHeight = Math.max(
+    height - resolvedMargin.top - resolvedMargin.bottom,
+    0
+  )
   if (showTopAxis && !isTopAxisInternal)
     plotHeight = Math.max(plotHeight - topSectionHeight, 0)
+  if (showBottomAxis && !isBottomAxisInternal)
+    plotHeight = Math.max(plotHeight - bottomSectionHeight, 0)
 
-  let plotWidth = width
+  let plotWidth = Math.max(
+    width - resolvedMargin.left - resolvedMargin.right,
+    0
+  )
   if (showLeftAxis && !isLeftAxisInternal)
     plotWidth = Math.max(plotWidth - leftSectionWidth, 0)
   if (showRightAxis && !isRightAxisInternal)
@@ -275,115 +294,114 @@ const CartesianChart = ({ width, height, children }: CartesianChartProps) => {
   // use the grid scales to generate rectangles
   return (
     <svg width={width} height={height}>
-      {renderedPlotArea}
-      <Group
-        left={leftSectionWidth}
-        top={isTopAxisInternal ? 0 : topAxisHeight}
-      >
-        <AnimatedGridColumns
-          scale={gridColumnScale}
-          height={
-            (isTopAxisInternal ? 0 : topAxisMargin) +
-            plotHeight +
-            (isBottomAxisInternal ? 0 : bottomAxisMargin)
-          }
-          stroke="rgba(34, 34, 34, 0.4)"
-          lineStyle={{
-            shapeRendering: 'crispEdges',
-          }}
-          animationTrajectory="center"
-        />
-      </Group>
-      <Group
-        left={isLeftAxisInternal ? 0 : leftAxisWidth}
-        top={topSectionHeight}
-      >
-        <AnimatedGridRows
-          scale={gridRowScale}
-          width={
-            (isLeftAxisInternal ? 0 : leftAxisMargin) +
-            plotWidth +
-            (isRightAxisInternal ? 0 : rightAxisMargin)
-          }
-          stroke="rgba(34, 34, 34, 0.4)"
-          lineStyle={{
-            shapeRendering: 'crispEdges',
-          }}
-          animationTrajectory="center"
-        />
-      </Group>
-      {showBottomAxis ? (
-        <AnimatedAxis
-          orientation={Orientation.bottom}
-          top={
-            isBottomAxisInternal
-              ? topSectionHeight + plotHeight / 2
-              : topSectionHeight + plotHeight + bottomAxisMargin
-          }
+      <Group top={resolvedMargin.top} left={resolvedMargin.left}>
+        {renderedPlotArea}
+        <Group
           left={leftSectionWidth}
-          scale={bottomAxisScale}
-          tickLength={bottomAxisTickLength}
-          animationTrajectory="center"
-        />
-      ) : null}
-      {showTopAxis ? (
-        <AnimatedAxis
-          orientation={Orientation.top}
-          top={isTopAxisInternal ? plotHeight / 2 : topAxisHeight}
-          left={leftSectionWidth}
-          scale={topAxisScale}
-          tickLength={topAxisTickLength}
-          tickLabelProps={{
-            textAnchor: 'middle',
-            dominantBaseline: 'text-top',
-            y: -topAxisTickLabelMargin,
-          }}
-          animationTrajectory="center"
-        />
-      ) : null}
-      {showLeftAxis ? (
-        <AnimatedAxis
-          orientation={Orientation.left}
+          top={isTopAxisInternal ? 0 : topAxisHeight}
+        >
+          <AnimatedGridColumns
+            scale={gridColumnScale}
+            height={
+              (isTopAxisInternal ? 0 : topAxisMargin) +
+              plotHeight +
+              (isBottomAxisInternal ? 0 : bottomAxisMargin)
+            }
+            stroke="rgba(34, 34, 34, 0.4)"
+            lineStyle={{
+              shapeRendering: 'crispEdges',
+            }}
+            animationTrajectory="center"
+          />
+        </Group>
+        <Group
+          left={isLeftAxisInternal ? 0 : leftAxisWidth}
           top={topSectionHeight}
-          left={isLeftAxisInternal ? plotWidth / 2 : leftAxisWidth}
-          scale={leftAxisScale}
-          tickLength={leftAxisTickLength}
-          tickLabelProps={{
-            textAnchor: 'end',
-            dominantBaseline: 'middle',
-            x: -leftAxisTickLabelMargin,
-          }}
-          animationTrajectory="center"
-        />
-      ) : null}
-      {showRightAxis ? (
-        <AnimatedAxis
-          orientation={Orientation.right}
-          top={topSectionHeight}
-          left={
-            isRightAxisInternal
-              ? leftSectionWidth + plotWidth / 2
-              : leftSectionWidth + plotWidth + rightAxisMargin
-          }
-          scale={rightAxisScale}
-          numTicks={15}
-          tickLength={rightAxisTickLength}
-          tickLabelProps={{
-            textAnchor: 'start',
-            dominantBaseline: 'middle',
-            x: rightAxisTickLabelMargin,
-          }}
-          animationTrajectory="center"
-        />
-      ) : null}
-      {/* call inside with the calculated plot dimensions for use */}
-      <>{children ? children({ width, height }) : null}</>
+        >
+          <AnimatedGridRows
+            scale={gridRowScale}
+            width={
+              (isLeftAxisInternal ? 0 : leftAxisMargin) +
+              plotWidth +
+              (isRightAxisInternal ? 0 : rightAxisMargin)
+            }
+            stroke="rgba(34, 34, 34, 0.4)"
+            lineStyle={{
+              shapeRendering: 'crispEdges',
+            }}
+            animationTrajectory="center"
+          />
+        </Group>
+        {showBottomAxis ? (
+          <AnimatedAxis
+            orientation={Orientation.bottom}
+            top={
+              isBottomAxisInternal
+                ? topSectionHeight + plotHeight / 2
+                : topSectionHeight + plotHeight + bottomAxisMargin
+            }
+            left={leftSectionWidth}
+            scale={bottomAxisScale}
+            tickLength={bottomAxisTickLength}
+            animationTrajectory="center"
+          />
+        ) : null}
+        {showTopAxis ? (
+          <AnimatedAxis
+            orientation={Orientation.top}
+            top={isTopAxisInternal ? plotHeight / 2 : topAxisHeight}
+            left={leftSectionWidth}
+            scale={topAxisScale}
+            tickLength={topAxisTickLength}
+            tickLabelProps={{
+              textAnchor: 'middle',
+              dominantBaseline: 'text-top',
+              y: -topAxisTickLabelMargin,
+            }}
+            animationTrajectory="center"
+          />
+        ) : null}
+        {showLeftAxis ? (
+          <AnimatedAxis
+            orientation={Orientation.left}
+            top={topSectionHeight}
+            left={isLeftAxisInternal ? plotWidth / 2 : leftAxisWidth}
+            scale={leftAxisScale}
+            tickLength={leftAxisTickLength}
+            tickLabelProps={{
+              textAnchor: 'end',
+              dominantBaseline: 'middle',
+              x: -leftAxisTickLabelMargin,
+            }}
+            animationTrajectory="center"
+          />
+        ) : null}
+        {showRightAxis ? (
+          <AnimatedAxis
+            orientation={Orientation.right}
+            top={topSectionHeight}
+            left={
+              isRightAxisInternal
+                ? leftSectionWidth + plotWidth / 2
+                : leftSectionWidth + plotWidth + rightAxisMargin
+            }
+            scale={rightAxisScale}
+            numTicks={15}
+            tickLength={rightAxisTickLength}
+            tickLabelProps={{
+              textAnchor: 'start',
+              dominantBaseline: 'middle',
+              x: rightAxisTickLabelMargin,
+            }}
+            animationTrajectory="center"
+          />
+        ) : null}
+        {/* call inside with the calculated plot dimensions for use */}
+        <>{children ? children({ width, height }) : null}</>
+      </Group>
     </svg>
   )
 }
 
-export { CartesianChart }
-export type { CartesianChartProps }
-function scaleLinaer(arg0: number[], arg1: number[]) {
-  throw new Error('Function not implemented.')
-}
+export { CartesianLayout }
+export type { CartesianLayoutProps }

@@ -1,4 +1,4 @@
-import { CartesianChart } from './CartesianChart'
+import { CartesianLayout } from './CartesianLayout'
 import { scaleOrdinal } from 'd3-scale'
 import {
   symbolCircle,
@@ -23,121 +23,95 @@ import {
   PlaygroundControlsArea,
   PlaygroundControlsGroup,
 } from './shared'
+import styled from 'styled-components'
 
-const MemoizedChart = memo(CartesianChart)
-const MAX_POINTS_COUNT = 1000
+const MemoizedChart = memo(CartesianLayout)
 
-const genRandomPoints = (
-  count: number,
-  min: number,
-  max: number,
-  seed: number = 0.4487157388828242
-) => {
-  const generator = randomInt.source(randomLcg(seed))(min, max)
-  return Array(count)
-    .fill(undefined)
-    .map(() => [generator(), generator(), generator()] as PointsRange)
-}
+const StyledControlsArea = styled(PlaygroundControlsArea)`
+  min-width: 200px;
+`
 
-const CartesianPlayground = () => {
+const CartesianLayoutPlayground = () => {
   // real versions are debounced
-  const [yMargin, setYMargin] = useState(40)
-  const debouncedYMargin = useDebounce(yMargin, 300)
-  const [xMargin, setXMargin] = useState(40)
-  const debouncedXMargin = useDebounce(xMargin, 300)
+  const [bottomMargin, setBottomMargin] = useState(0)
+  const [topMargin, setTopMargin] = useState(0)
+  const [leftMargin, setLeftMargin] = useState(0)
+  const [rightMargin, setRightMargin] = useState(0)
+
+  const debouncedBottomMargin = useDebounce(bottomMargin, 300)
+  const debouncedTopMargin = useDebounce(topMargin, 300)
+  const debouncedLeftMargin = useDebounce(leftMargin, 300)
+  const debouncedRightMargin = useDebounce(rightMargin, 300)
   const [animate, setAnimate] = useState(true)
 
-  const [pointsCount, setPointsCount] = useState(10)
-  const debouncedPointsCount = useDebounce(pointsCount, 300)
-  const [points, setPoints] = useState(
-    genRandomPoints(MAX_POINTS_COUNT, 0, 100)
-  )
-  const debouncedPoints = useDebounce(points, 300)
-
-  const filteredPoints = useMemo(
-    () => debouncedPoints.slice(0, debouncedPointsCount),
-    [debouncedPoints, debouncedPointsCount]
-  )
-
-  const [shapes, setShapes] = useState([
-    symbolCircle,
-    symbolDiamond,
-    symbolCross,
-    symbolStar,
-    symbolTriangle,
-    symbolSquare,
-    symbolWye,
-  ])
-  const symbolScale = useMemo(
-    () => scaleOrdinal(range(0, 10), shapes),
-    [shapes]
-  )
-
-  const handleShuffleShapes = useCallback(() => {
-    setShapes(shuffle(shapes.slice()))
-  }, [setShapes, shapes])
-  const handleRandomize = useCallback(() => {
-    setPoints(genRandomPoints(MAX_POINTS_COUNT, 0, 100, Math.random()))
-  }, [setPoints])
   const handleAnimateChange = useCallback((event: CheckboxChangeEvent) => {
     setAnimate(event.target.checked)
   }, [])
 
   const debouncedChartMargins = useMemo(
     () => ({
-      top: debouncedYMargin,
-      bottom: debouncedYMargin,
-      left: debouncedXMargin,
-      right: debouncedXMargin,
+      bottom: debouncedBottomMargin,
+      top: debouncedTopMargin,
+      left: debouncedLeftMargin,
+      right: debouncedRightMargin,
     }),
-    [debouncedXMargin, debouncedYMargin]
+    [
+      debouncedBottomMargin,
+      debouncedTopMargin,
+      debouncedLeftMargin,
+      debouncedRightMargin,
+    ]
   )
 
   return (
     <MotionConfig>
       <PlaygroundContainer>
-        <PlaygroundControlsArea>
+        <StyledControlsArea>
           <PlaygroundControlsGroup>
-            <Button onClick={handleRandomize}>Randomize Points</Button>
-          </PlaygroundControlsGroup>
-          <PlaygroundControlsGroup>
-            <Button onClick={handleShuffleShapes}>Shuffle Shapes</Button>
-          </PlaygroundControlsGroup>
-          <PlaygroundControlsGroup>
-            Points #
+            Top Margin
             <Slider
               step={5}
-              min={5}
-              max={MAX_POINTS_COUNT}
-              onChange={setPointsCount}
-              value={pointsCount}
+              min={0}
+              max={300}
+              onChange={setTopMargin}
+              value={topMargin}
             />
           </PlaygroundControlsGroup>
           <PlaygroundControlsGroup>
-            X Margin
+            Bottom Margin
             <Slider
               step={5}
-              min={25}
+              min={0}
               max={300}
-              onChange={setXMargin}
-              value={xMargin}
+              onChange={setBottomMargin}
+              value={bottomMargin}
             />
           </PlaygroundControlsGroup>
           <PlaygroundControlsGroup>
-            Y Margin
+            Left Margin
             <Slider
               step={5}
-              min={25}
+              min={0}
               max={300}
-              onChange={setYMargin}
-              value={yMargin}
+              onChange={setLeftMargin}
+              value={leftMargin}
+            />
+          </PlaygroundControlsGroup>
+          <PlaygroundControlsGroup>
+            Right Margin
+            <Slider
+              step={5}
+              min={0}
+              max={300}
+              onChange={setRightMargin}
+              value={rightMargin}
             />
           </PlaygroundControlsGroup>
           <PlaygroundControlsGroup>
             <Checkbox checked={animate} onChange={handleAnimateChange} />
             Animate
           </PlaygroundControlsGroup>
-        </PlaygroundControlsArea>
+        </StyledControlsArea>
         <PlaygroundChartArea debounceTime={500}>
           {({ width, height }) => (
             <MemoizedChart
@@ -153,4 +127,4 @@ const CartesianPlayground = () => {
   )
 }
 
-export { CartesianPlayground }
+export { CartesianLayoutPlayground }

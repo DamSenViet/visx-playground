@@ -10,7 +10,8 @@ export const PlaygroundContainer = styled.div`
 `
 
 export const PlaygroundControlsArea = styled.div`
-  padding: 15px 15px;
+  border-right: 1px solid rgb(240, 240, 240);
+  padding: 15px 35px;
   max-height: 100%;
   overflow: auto;
 `

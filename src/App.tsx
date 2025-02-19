@@ -1,7 +1,7 @@
 import 'normalize.css'
 import styled from 'styled-components'
 import { BubblePlayground } from './components/BubblePlayground'
-import { CartesianPlayground } from './components/CartesianPlayground'
+import { CartesianLayoutPlayground } from './components/CartesianPlayground'
 import { Tabs, TabsProps } from 'antd'
 import {
   AreaChartOutlined,
@@ -32,8 +32,8 @@ const StyledTabs = styled(Tabs)`
 const items: TabsProps['items'] = [
   {
     key: 'Visx + Framer Cartesian',
-    label: 'Cartesian',
-    children: <CartesianPlayground />,
+    label: 'Cartesian Layout',
+    children: <CartesianLayoutPlayground />,
     icon: <AreaChartOutlined />,
     style: {
       height: '100%',
