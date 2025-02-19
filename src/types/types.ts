@@ -4,3 +4,8 @@ export interface Positional<T> {
   left: T
   right: T
 }
+
+export interface PolarPositional<T> {
+  angle: T
+  radius: T
+}

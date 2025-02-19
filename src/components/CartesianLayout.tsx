@@ -7,9 +7,9 @@ import {
 } from '@visx/react-spring'
 import { scaleBand, scaleOrdinal } from 'd3-scale'
 import { ReactNode, useMemo } from 'react'
-import { getAxisSize } from './measure'
+import { getAxisSize } from '../utils/measure'
 import { defaults, uniq } from 'lodash-es'
-import { Positional } from './primitives/types'
+import { Positional } from '../types/types'
 
 interface CartesianLayoutAxisConfig {
   /**
