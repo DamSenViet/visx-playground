@@ -86,12 +86,12 @@ interface CartesianLayoutOptions {
    * Acts more like chart padding.
    * Note: axis have their own additional margin between themselves and the plot area.
    */
-  margin: Partial<Positional<number>>
+  padding: Partial<Positional<number>>
 }
 
 const defaultWidth = 300
 const defaultHeight = 300
-const defaultMargin: Positional<number> = {
+const defaultPadding: Positional<number> = {
   top: 0,
   bottom: 0,
   left: 0,
@@ -107,7 +107,7 @@ const defaultMargin: Positional<number> = {
 export const useCartesianLayout = ({
   width = defaultWidth,
   height = defaultHeight,
-  margin = defaultMargin,
+  padding = defaultPadding,
 }: CartesianLayoutOptions) => {
   // should return all calculations (plotArea, etc)
 
@@ -121,7 +121,7 @@ export const useCartesianLayout = ({
   const leftAxisTickLabelMargin = 3
   const rightAxisTickLabelMargin = 3
 
-  const resolvedMargin = defaults({}, margin, defaultMargin)
+  const resolvedPadding = defaults({}, padding, defaultPadding)
 
   // @TODO: IMPLEMENT ALTERNATING TICK LABEL CALCS INTO THE AXIS DIMENSIONS
   // line height dependent
@@ -221,7 +221,7 @@ export const useCartesianLayout = ({
     : rightAxisWidth + rightAxisMargin
 
   let plotHeight = Math.max(
-    height - resolvedMargin.top - resolvedMargin.bottom,
+    height - resolvedPadding.top - resolvedPadding.bottom,
     0
   )
   if (showTopAxis && !isTopAxisInternal)
@@ -230,13 +230,82 @@ export const useCartesianLayout = ({
     plotHeight = Math.max(plotHeight - bottomSectionHeight, 0)
 
   let plotWidth = Math.max(
-    width - resolvedMargin.left - resolvedMargin.right,
+    width - resolvedPadding.left - resolvedPadding.right,
     0
   )
   if (showLeftAxis && !isLeftAxisInternal)
     plotWidth = Math.max(plotWidth - leftSectionWidth, 0)
   if (showRightAxis && !isRightAxisInternal)
     plotWidth = Math.max(plotWidth - rightSectionWidth, 0)
+
+  // ----------------------------------------------------
+  // Component positions relative to the given chart box
+  // ----------------------------------------------------
+  interface PositionedBox {
+    top: number
+    left: number
+    height: number
+    width: number
+  }
+
+  const plotBox = {
+    top: leftSectionWidth,
+    left: topSectionHeight,
+    height: plotHeight,
+    width: plotWidth,
+  }
+
+  const topAxisBox = {
+    top: isTopAxisInternal ? plotHeight / 2 : topAxisHeight,
+    left: leftSectionWidth,
+    height: topAxisHeight,
+    width: plotWidth,
+  }
+
+  const bottomAxisBox = {
+    top: isBottomAxisInternal
+      ? topSectionHeight + plotHeight / 2
+      : topSectionHeight + plotHeight + bottomAxisMargin,
+    left: leftSectionWidth,
+    height: bottomAxisHeight,
+    width: plotWidth,
+  }
+
+  const leftAxisBox = {
+    top: topSectionHeight,
+    left: isLeftAxisInternal ? plotWidth / 2 : leftAxisWidth,
+    height: plotHeight,
+    width: leftAxisWidth,
+  }
+
+  const rightAxisBox = {
+    top: topSectionHeight,
+    left: isRightAxisInternal
+      ? leftSectionWidth + plotWidth / 2
+      : leftSectionWidth + plotWidth + rightAxisMargin,
+    height: plotHeight,
+    width: rightAxisWidth,
+  }
+
+  const gridColumnsBox = {
+    top: isTopAxisInternal ? 0 : topAxisHeight,
+    left: leftSectionWidth,
+    height:
+      (isTopAxisInternal ? 0 : topAxisMargin) +
+      plotHeight +
+      (isBottomAxisInternal ? 0 : bottomAxisMargin),
+    width: plotWidth,
+  }
+
+  const gridRowsBox = {
+    top: topSectionHeight,
+    left: isLeftAxisInternal ? 0 : leftAxisWidth,
+    height: plotHeight,
+    width:
+      (isLeftAxisInternal ? 0 : leftAxisMargin) +
+      plotWidth +
+      (isRightAxisInternal ? 0 : rightAxisMargin),
+  }
 
   return {
     showTopAxis,
